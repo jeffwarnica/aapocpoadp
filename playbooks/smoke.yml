@@ -1,0 +1,68 @@
+---
+- name: Smoke test OpenShift
+  hosts: openshift
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Reach the OpenShift console
+      ansible.builtin.uri:
+        url: "{{ ocp_console_url }}"
+        method: GET
+        status_code: [200, 301, 302, 303]
+        follow_redirects: safe
+      register: ocp_console
+
+    - name: Authenticate to the OpenShift API
+      ansible.builtin.uri:
+        url: "{{ ocp_api_url }}/apis/user.openshift.io/v1/users/~"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ ocp_token }}"
+        status_code: 200
+        validate_certs: "{{ ocp_validate_certs | default(true) | bool }}"
+      register: ocp_whoami
+      no_log: true
+
+    - name: Confirm the OpenShift identity
+      ansible.builtin.debug:
+        msg: "OpenShift API accepted {{ ocp_whoami.json.metadata.name }}"
+
+- name: Smoke test Azure
+  hosts: azure
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Reach the Azure portal
+      ansible.builtin.uri:
+        url: "{{ azure_portal_url }}"
+        method: GET
+        status_code: 200
+        follow_redirects: safe
+
+    - name: Authenticate the Azure service principal
+      ansible.builtin.uri:
+        url: "https://login.microsoftonline.com/{{ azure_tenant_id }}/oauth2/v2.0/token"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          grant_type: client_credentials
+          client_id: "{{ azure_client_id }}"
+          client_secret: "{{ azure_client_secret }}"
+          scope: https://management.azure.com/.default
+        status_code: 200
+      register: azure_token
+      no_log: true
+
+    - name: Read the Azure subscription
+      ansible.builtin.uri:
+        url: "https://management.azure.com/subscriptions/{{ azure_subscription_id }}?api-version=2022-12-01"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ azure_token.json.access_token }}"
+        status_code: 200
+      register: azure_sub
+      no_log: true
+
+    - name: Confirm the Azure subscription
+      ansible.builtin.debug:
+        msg: "Azure subscription {{ azure_sub.json.displayName }} ({{ azure_sub.json.state }}) is reachable"

@@ -1,0 +1,31 @@
+---
+# Copy this file to "inventory" and fill in the values.
+# "inventory" is gitignored. Do not commit credentials.
+all:
+  vars:
+    ansible_connection: local
+  children:
+    openshift:
+      hosts:
+        cluster:
+          # OpenShift API, including the port. Example:
+          # https://api.cluster.example.com:6443
+          ocp_api_url: https://CHANGE_ME:6443
+          # Console route. Example:
+          # https://console-openshift-console.apps.cluster.example.com
+          ocp_console_url: https://CHANGE_ME
+          ocp_username: kubeadmin
+          ocp_password: "CHANGE_ME"
+          # Bearer token with permission to read the cluster API.
+          ocp_token: "CHANGE_ME"
+          # Set false when the API serves a certificate this host does not trust.
+          ocp_validate_certs: true
+    azure:
+      hosts:
+        portal:
+          azure_portal_url: https://portal.azure.com
+          azure_tenant_id: CHANGE_ME
+          azure_client_id: CHANGE_ME
+          # Service principal client secret.
+          azure_client_secret: "CHANGE_ME"
+          azure_subscription_id: CHANGE_ME
